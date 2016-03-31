@@ -15,11 +15,13 @@ namespace KVP
                 using (var tx = env.NewTransaction(TransactionFlags.ReadWrite))
                 {
                     env.CreateTree(tx, "Votes");
+                    env.CreateTree(tx, "CityVotes");
 
                     tx.Commit();
                 }
-
-                VoteFor(env, 304, "Black", "Sao Paulo");
+                VoteFor(env, 1304, "Black", "Sao Paulo");
+                VoteFor(env, 34, "Black", "Sao Paulo");
+                VoteFor(env, 304, "Black", "New York");
 
                 using (var tx = env.NewTransaction(TransactionFlags.Read))
                 {
@@ -33,6 +35,19 @@ namespace KVP
                                 var id = it.CurrentKey.CreateReader().ReadAllAsString();
                                 var value = it.CreateReaderForCurrent().ReadAllAsString();
                                 Console.WriteLine(id+","+value);
+                            } while (it.MoveNext());
+                        }
+                    }
+                    Console.WriteLine();
+                    Console.WriteLine("Votes in SP:");
+                    var cityVotes = tx.ReadTree("CityVotes");
+                    using (var it = cityVotes.MultiRead("Sao Paulo"))
+                    {
+                        if (it.Seek(Slice.BeforeAllKeys))
+                        {
+                            do
+                            {
+                                Console.WriteLine(it.CurrentKey.CreateReader().ReadAllAsString());
                             } while (it.MoveNext());
                         }
                     }
@@ -53,6 +68,11 @@ namespace KVP
 
                 tree.Add(id.ToString(),
                     Encoding.UTF8.GetBytes(color + "," + city));
+
+                var cityVotes = tx.ReadTree("CityVotes");
+                // var cityVotes = new Dictionary<string, HashSet<string>>();
+                cityVotes.MultiAdd(city, id.ToString());
+
                 tx.Commit();
             }
         }
